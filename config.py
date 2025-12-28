@@ -1,26 +1,18 @@
 import os
-from datetime import timedelta
 
 class Config:
-    # Database Configuration
-    MYSQL_HOST = os.environ.get('MYSQL_HOST') or 'localhost'
-    MYSQL_PORT = int(os.environ.get('MYSQL_PORT') or 3306)
-    MYSQL_USER = os.environ.get('MYSQL_USER') or 'root'
-    MYSQL_PASSWORD = os.environ.get('MYSQL_PASSWORD') or ''
-    MYSQL_DATABASE = os.environ.get('MYSQL_DATABASE') or 'detkul_db'
+    SECRET_KEY = os.environ.get('SECRET_KEY') or 'kuncirahasia'
     
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///database.db'
+    # Ambil link database dari Railway
+    database_url = os.environ.get('DATABASE_URL')
+    
+    if database_url:
+        # PENTING: Ubah mysql:// jadi mysql+pymysql:// agar tidak error di Python
+        if database_url.startswith("mysql://"):
+            database_url = database_url.replace("mysql://", "mysql+pymysql://", 1)
+        SQLALCHEMY_DATABASE_URI = database_url
+    else:
+        # Jika dijalankan di laptop (lokal), otomatis pakai SQLite
+        SQLALCHEMY_DATABASE_URI = 'sqlite:///database.db'
+        
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    
-    # Secret Key untuk session
-    SECRET_KEY = os.environ.get('SECRET_KEY') or 'your-secret-key-change-this-in-production'
-    
-    # Session Configuration
-    PERMANENT_SESSION_LIFETIME = timedelta(days=7)
-    
-    # Upload Configuration
-    UPLOAD_FOLDER = 'uploads'
-    MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB
-    ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
-
-
