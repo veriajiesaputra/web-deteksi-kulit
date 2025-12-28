@@ -89,9 +89,11 @@ else:
 
 
 def allowed_file(filename):
-    """Check if file extension is allowed"""
+    # Kita tentukan manual di sini biar pasti jalan
+    ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp'}
+    
     return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
 def preprocess_image(image_file, target_size=(224, 224)):
