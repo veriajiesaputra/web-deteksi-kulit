@@ -1,0 +1,269 @@
+{% extends "base.html" %}
+
+{% block title %}Beranda - Skinalyze{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <div class="container">
+        <div class="hero-wrapper">
+            <div class="hero-left">
+                <h1 class="hero-title">
+                    Deteksi Dini untuk Kulit <span class="highlight">yang Lebih Sehat</span>
+                </h1>
+                <p class="hero-subtitle">
+                    Deteksi penyakit kulit sekarang memungkinkan Anda untuk mendapatkan diagnosis awal dari rumah dan menerima hasil prediksi beserta rekomendasi pengobatan langsung di genggaman Anda!
+                </p>
+                <div class="hero-actions">
+                    {% if current_user.is_authenticated %}
+                    <a href="{{ url_for('predict_page') }}" class="btn btn-primary btn-large">
+                        <span class="btn-icon">📅</span>
+                        Mulai Prediksi
+                    </a>
+                    {% else %}
+                    <a href="{{ url_for('login', next=url_for('predict_page')) }}" class="btn btn-primary btn-large">
+                        <span class="btn-icon">🔐</span>
+                        Login untuk Prediksi
+                    </a>
+                    {% endif %}
+                    <a href="#how-it-works" class="btn btn-outline btn-large">
+                        <span class="btn-icon">▶</span>
+                        Cara Kerja
+                    </a>
+                </div>
+                <div class="hero-stats">
+                    <div class="stat-card">
+                        <div class="stat-value">9</div>
+                        <div class="stat-label">Kelas Penyakit</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">87%+</div>
+                        <div class="stat-label">Akurasi</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">24/7</div>
+                        <div class="stat-label">Tersedia</div>
+                    </div>
+                </div>
+            </div>
+            <div class="hero-right">
+                <div class="hero-visual">
+                    <!-- Floating Icons -->
+                    <div class="floating-icon icon-1">
+                        <div class="icon-circle icon-secure">🔒</div>
+                    </div>
+                    <div class="floating-icon icon-2">
+                        <div class="icon-circle icon-plus">+</div>
+                    </div>
+                    <div class="floating-icon icon-3">
+                        <div class="icon-circle icon-heart">❤️</div>
+                    </div>
+                    <div class="floating-icon icon-4">
+                        <div class="icon-circle icon-syringe">💉</div>
+                    </div>
+                    
+                    <!-- Main Visual Area -->
+                    <div class="hero-main-visual">
+                        <div class="visual-placeholder">
+                            <div class="medical-icon">🏥</div>
+                            <p>AI Detection</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Info Cards -->
+                    <div class="info-card reviews-card">
+                        <div class="card-header">
+                            <h4>Review</h4>
+                            <div class="stars">★★★★★</div>
+                        </div>
+                        <div class="card-avatars">
+                            <div class="avatar">👤</div>
+                            <div class="avatar">👤</div>
+                            <div class="avatar">👤</div>
+                            <div class="avatar">👤</div>
+                        </div>
+                        <div class="card-stats">
+                            <div class="card-stat">
+                                <span class="card-stat-value">12.5K</span>
+                                <span class="card-stat-label">Pengguna</span>
+                            </div>
+                            <div class="card-stat">
+                                <span class="card-stat-value">98%</span>
+                                <span class="card-stat-label">Akurasi</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="info-card doctor-card">
+                        <div class="doctor-icon">👨‍⚕️</div>
+                        <div class="doctor-info">
+                            <div class="doctor-name">AI Model</div>
+                            <div class="doctor-title">MobileNetV2</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section id="how-it-works" class="how-it-works">
+    <div class="container">
+        <h2 class="section-title">Cara Kerja</h2>
+        <p class="section-subtitle">Tiga langkah sederhana untuk mendapatkan diagnosis awal penyakit kulit Anda</p>
+        <div class="steps-grid">
+            <div class="step-card">
+                <div class="step-number">1</div>
+                <div class="step-icon">📸</div>
+                <h3>Upload Gambar</h3>
+                <p>Unggah foto area kulit yang ingin diperiksa melalui upload file atau kamera</p>
+            </div>
+            <div class="step-card">
+                <div class="step-number">2</div>
+                <div class="step-icon">🤖</div>
+                <h3>Analisis AI</h3>
+                <p>Model AI kami akan menganalisis gambar menggunakan teknologi deep learning</p>
+            </div>
+            <div class="step-card">
+                <div class="step-number">3</div>
+                <div class="step-icon">📊</div>
+                <h3>Hasil & Rekomendasi</h3>
+                <p>Dapatkan prediksi penyakit, tingkat kepercayaan, dan rekomendasi pengobatan</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="features">
+    <div class="container">
+        <h2 class="section-title">Fitur Utama</h2>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">⚡</div>
+                <h3>Prediksi Cepat</h3>
+                <p>Dapatkan hasil prediksi dalam hitungan detik dengan akurasi tinggi</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🧠</div>
+                <h3>AI Powered</h3>
+                <p>Ditenagai oleh model MobileNetV2 yang telah dilatih dengan ribuan gambar</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🔒</div>
+                <h3>Aman & Privat</h3>
+                <p>Data Anda aman dan tidak disimpan setelah proses prediksi selesai</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📚</div>
+                <h3>Edukasi Lengkap</h3>
+                <p>Akses artikel edukasi tentang berbagai penyakit kulit dan cara pengobatannya</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="articles-preview">
+    <div class="container">
+        <h2 class="section-title">Artikel Edukasi</h2>
+        <p class="section-subtitle">Pelajari lebih lanjut tentang berbagai penyakit kulit yang dapat dideteksi oleh sistem</p>
+        <div class="articles-grid" id="articlesGrid">
+            <!-- Articles will be loaded dynamically -->
+            <div class="articles-loading">
+                <div class="spinner-small"></div>
+                <p>Memuat artikel...</p>
+            </div>
+        </div>
+        <div class="text-center" style="margin-top: 2rem;">
+            <a href="{{ url_for('artikel') }}" class="btn btn-secondary">Lihat Semua Artikel</a>
+        </div>
+    </div>
+</section>
+
+<section class="cta-section">
+    <div class="container">
+        <div class="cta-content">
+            <h2>Siap untuk Memulai?</h2>
+            <p>Unggah foto untuk mendapatkan prediksi penyakit kulit Anda</p>
+            {% if current_user.is_authenticated %}
+            <a href="{{ url_for('predict_page') }}" class="btn btn-primary btn-large">Mulai Prediksi Sekarang</a>
+            {% else %}
+            <a href="{{ url_for('login', next=url_for('predict_page')) }}" class="btn btn-primary btn-large">Login untuk Mulai Prediksi</a>
+            {% endif %}
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Load articles preview
+    loadArticlesPreview();
+    
+    function loadArticlesPreview() {
+        const articlesGrid = document.getElementById('articlesGrid');
+        
+        fetch('/api/diseases/preview')
+            .then(response => response.json())
+            .then(data => {
+                if (data.diseases && data.diseases.length > 0) {
+                    articlesGrid.innerHTML = '';
+                    
+                    // Icons for different diseases
+                    const diseaseIcons = {
+                        'Actinic keratosis': '🔴',
+                        'Atopic Dermatitis': '🟡',
+                        'Benign keratosis': '🟠',
+                        'Dermatofibroma': '🟣',
+                        'Melanocytic nevus': '⚫',
+                        'Melanoma': '🔴',
+                        'Squamous cell carcinoma': '🟤',
+                        'Tinea Ringworm Candidiasis': '🟢',
+                        'Vascular lesion': '🔵'
+                    };
+                    
+                    data.diseases.forEach(disease => {
+                        const articleCard = document.createElement('article');
+                        articleCard.className = 'article-card';
+                        
+                        // Get icon or use default
+                        const icon = diseaseIcons[disease.name] || '📋';
+                        
+                        // Get short description from explanation
+                        const shortDesc = disease.explanation 
+                            ? disease.explanation.substring(0, 120) + '...' 
+                            : 'Pelajari lebih lanjut tentang ' + disease.display_name;
+                        
+                        articleCard.innerHTML = `
+                            <div class="article-icon">${icon}</div>
+                            <h3>${disease.display_name}</h3>
+                            <p>${shortDesc}</p>
+                            <div class="article-footer">
+                                <a href="{{ url_for('artikel') }}?disease=${encodeURIComponent(disease.name)}" class="article-link">Baca Selengkapnya →</a>
+                            </div>
+                        `;
+                        
+                        // Add click handler - make card clickable
+                        articleCard.style.cursor = 'pointer';
+                        
+                        articleCard.addEventListener('click', function(e) {
+                            // Don't navigate if clicking on the link itself
+                            const link = articleCard.querySelector('.article-link');
+                            if (e.target !== link && !link.contains(e.target)) {
+                                window.location.href = "{{ url_for('artikel') }}?disease=" + encodeURIComponent(disease.name);
+                            }
+                        });
+                        
+                        articlesGrid.appendChild(articleCard);
+                    });
+                } else {
+                    articlesGrid.innerHTML = '<p style="text-align: center; color: var(--text-secondary);">Tidak ada artikel tersedia.</p>';
+                }
+            })
+            .catch(error => {
+                console.error('Error loading articles:', error);
+                articlesGrid.innerHTML = '<p style="text-align: center; color: var(--text-secondary);">Gagal memuat artikel.</p>';
+            });
+    }
+});
+</script>
+{% endblock %}

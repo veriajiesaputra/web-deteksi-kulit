@@ -1,0 +1,279 @@
+{% extends "base.html" %}
+
+{% block title %}Artikel - Skinalyze{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <h1>Artikel Edukasi Penyakit Kulit</h1>
+        <p>Pelajari lebih lanjut tentang berbagai penyakit kulit, penyebab, gejala, dan cara mengobatinya</p>
+    </div>
+
+    <!-- Dropdown Component -->
+    <div class="dropdown-section">
+        <div class="dropdown-container">
+            <div class="dropdown-header">
+                <div class="dropdown-icon-wrapper">
+                    <span class="dropdown-icon">🔍</span>
+                </div>
+                <div class="dropdown-header-text">
+                    <h2 class="dropdown-title">Cari Informasi Penyakit Kulit</h2>
+                    <p class="dropdown-subtitle">Pilih penyakit dari dataset untuk melihat penjelasan, pengobatan, dan contoh gambar</p>
+                </div>
+            </div>
+            
+            <div class="dropdown-wrapper">
+                <div class="dropdown-select-wrapper">
+                    <select id="diseaseDropdown" class="disease-dropdown">
+                        <option value="">-- Pilih Penyakit Kulit --</option>
+                    </select>
+                    <span class="dropdown-arrow">▼</span>
+                </div>
+            </div>
+
+            <!-- Loading indicator -->
+            <div class="disease-loading" id="diseaseLoading" style="display: none;">
+                <div class="spinner-small"></div>
+                <p>Memuat informasi...</p>
+            </div>
+
+            <!-- Disease Info Display -->
+            <div class="disease-info-container" id="diseaseInfoContainer" style="display: none;">
+                <div class="disease-header-card">
+                    <div class="disease-header-content">
+                        <div class="disease-icon-badge">🏥</div>
+                        <div class="disease-header-text">
+                            <h3 id="diseaseDisplayName" class="disease-name">-</h3>
+                            <span id="diseaseImageCount" class="disease-count" style="display: none;">-</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Explanation -->
+                <div class="disease-section">
+                    <h4 class="disease-section-title">📋 Penjelasan</h4>
+                    <p id="diseaseExplanation" class="disease-text">-</p>
+                </div>
+
+                <!-- Treatment -->
+                <div class="disease-section">
+                    <h4 class="disease-section-title">💊 Pengobatan & Perawatan</h4>
+                    <ul id="diseaseTreatment" class="disease-treatment-list">
+                        <!-- Will be populated by JavaScript -->
+                    </ul>
+                </div>
+
+                <!-- Sample Images -->
+                <div class="disease-section">
+                    <h4 class="disease-section-title">🖼️ Contoh Gambar dari Dataset</h4>
+                    <div id="diseaseImages" class="disease-images-grid">
+                        <!-- Will be populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Error message -->
+            <div class="disease-error" id="diseaseError" style="display: none;"></div>
+        </div>
+    </div>
+
+    <div class="articles-container">
+        <!-- Informasi: Artikel lengkap akan muncul otomatis saat memilih penyakit dari dropdown di atas -->
+        <div class="articles-info">
+            <p style="text-align: center; color: var(--text-secondary); padding: 2rem;">
+                📚 Gunakan dropdown di atas untuk memilih penyakit dan melihat artikel lengkap beserta contoh gambar dari dataset.
+            </p>
+            </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const dropdown = document.getElementById('diseaseDropdown');
+    const loadingDiv = document.getElementById('diseaseLoading');
+    const infoContainer = document.getElementById('diseaseInfoContainer');
+    const errorDiv = document.getElementById('diseaseError');
+    
+    // Check for disease parameter in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const diseaseParam = urlParams.get('disease');
+    
+    // Load diseases list
+    loadDiseases().then(() => {
+        // If disease parameter exists, select it automatically
+        if (diseaseParam) {
+            // Wait a bit for dropdown to be populated
+            setTimeout(() => {
+                dropdown.value = diseaseParam;
+                if (dropdown.value === diseaseParam) {
+                    loadDiseaseInfo(diseaseParam);
+                    // Scroll to dropdown section
+                    document.querySelector('.dropdown-section').scrollIntoView({ 
+                        behavior: 'smooth', 
+                        block: 'start' 
+                    });
+                }
+            }, 100);
+        }
+    });
+    
+    // Handle dropdown change
+    dropdown.addEventListener('change', function() {
+        const selectedDisease = this.value;
+        if (selectedDisease) {
+            loadDiseaseInfo(selectedDisease);
+            // Update URL without reload
+            const newUrl = new URL(window.location);
+            newUrl.searchParams.set('disease', selectedDisease);
+            window.history.pushState({}, '', newUrl);
+        } else {
+            hideInfo();
+            // Remove disease parameter from URL
+            const newUrl = new URL(window.location);
+            newUrl.searchParams.delete('disease');
+            window.history.pushState({}, '', newUrl);
+        }
+    });
+    
+    async function loadDiseases() {
+        try {
+            const response = await fetch('/api/diseases');
+            const data = await response.json();
+            
+            if (data.diseases) {
+                // Clear existing options except the first one
+                dropdown.innerHTML = '<option value="">-- Pilih Penyakit Kulit --</option>';
+                
+                // Add diseases to dropdown
+                data.diseases.forEach(disease => {
+                    const option = document.createElement('option');
+                    option.value = disease.name;
+                    option.textContent = disease.display_name;
+                    dropdown.appendChild(option);
+                });
+            }
+            return Promise.resolve();
+        } catch (error) {
+            console.error('Error loading diseases:', error);
+            showError('Gagal memuat daftar penyakit. Silakan refresh halaman.');
+            return Promise.reject(error);
+        }
+    }
+    
+    async function loadDiseaseInfo(diseaseName) {
+        showLoading();
+        hideInfo();
+        hideError();
+        
+        try {
+            // Load disease info and images in parallel
+            const [infoResponse, imagesResponse] = await Promise.all([
+                fetch(`/api/disease/${encodeURIComponent(diseaseName)}`),
+                fetch(`/api/disease/${encodeURIComponent(diseaseName)}/images`)
+            ]);
+            
+            if (!infoResponse.ok || !imagesResponse.ok) {
+                throw new Error('Gagal memuat informasi penyakit');
+            }
+            
+            const infoData = await infoResponse.json();
+            const imagesData = await imagesResponse.json();
+            
+            // Display disease info
+            document.getElementById('diseaseDisplayName').textContent = infoData.display_name;
+            document.getElementById('diseaseImageCount').style.display = 'none';
+            document.getElementById('diseaseExplanation').textContent = infoData.explanation;
+            
+            // Display treatment
+            const treatmentList = document.getElementById('diseaseTreatment');
+            treatmentList.innerHTML = '';
+            if (infoData.treatment && infoData.treatment.length > 0) {
+                infoData.treatment.forEach(treatment => {
+                    const li = document.createElement('li');
+                    li.textContent = treatment;
+                    treatmentList.appendChild(li);
+                });
+            } else {
+                const li = document.createElement('li');
+                li.textContent = 'Konsultasikan dengan dokter untuk penanganan yang tepat.';
+                treatmentList.appendChild(li);
+            }
+            
+            // Display images
+            const imagesGrid = document.getElementById('diseaseImages');
+            imagesGrid.innerHTML = '';
+            if (imagesData.images && imagesData.images.length > 0) {
+                imagesData.images.forEach(imageUrl => {
+                    const div = document.createElement('div');
+                    div.className = 'disease-image-item';
+                    
+                    const img = document.createElement('img');
+                    img.src = imageUrl;
+                    img.alt = infoData.display_name;
+                    img.loading = 'lazy';
+                    img.style.width = '100%';
+                    img.style.height = '100%';
+                    img.style.objectFit = 'cover';
+                    img.onerror = function() {
+                        console.error('Error loading image:', imageUrl);
+                        this.parentElement.style.display = 'none';
+                    };
+                    img.onload = function() {
+                        console.log('Image loaded:', imageUrl);
+                    };
+                    
+                    div.appendChild(img);
+                    imagesGrid.appendChild(div);
+                });
+            } else {
+                const p = document.createElement('p');
+                p.textContent = 'Tidak ada gambar tersedia untuk penyakit ini.';
+                p.style.color = '#666';
+                p.style.padding = '2rem';
+                p.style.textAlign = 'center';
+                imagesGrid.appendChild(p);
+            }
+            
+            hideLoading();
+            showInfo();
+            
+            // Scroll to info container
+            infoContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            
+        } catch (error) {
+            console.error('Error loading disease info:', error);
+            hideLoading();
+            showError('Gagal memuat informasi penyakit. Silakan coba lagi.');
+        }
+    }
+    
+    function showLoading() {
+        loadingDiv.style.display = 'block';
+    }
+    
+    function hideLoading() {
+        loadingDiv.style.display = 'none';
+    }
+    
+    function showInfo() {
+        infoContainer.style.display = 'block';
+    }
+    
+    function hideInfo() {
+        infoContainer.style.display = 'none';
+    }
+    
+    function showError(message) {
+        errorDiv.textContent = message;
+        errorDiv.style.display = 'block';
+    }
+    
+    function hideError() {
+        errorDiv.style.display = 'none';
+    }
+});
+</script>
+{% endblock %}
+

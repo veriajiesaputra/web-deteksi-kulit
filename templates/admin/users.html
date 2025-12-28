@@ -1,0 +1,163 @@
+{% extends "admin/base.html" %}
+
+{% block title %}User Management - Admin Panel{% endblock %}
+{% block page_title %}User Management{% endblock %}
+
+{% block content %}
+<div class="admin-page-container">
+    <!-- Search and Filters -->
+    <div class="page-toolbar">
+        <form method="GET" class="search-form">
+            <input type="text" name="search" placeholder="Search username, email, or name..." 
+                   value="{{ search }}" class="search-input">
+            <select name="role" class="filter-select">
+                <option value="">All Roles</option>
+                <option value="user" {% if role_filter == 'user' %}selected{% endif %}>User</option>
+                <option value="admin" {% if role_filter == 'admin' %}selected{% endif %}>Admin</option>
+            </select>
+            <button type="submit" class="btn-search">🔍 Search</button>
+            <a href="{{ url_for('admin_users') }}" class="btn-reset">Reset</a>
+        </form>
+        <a href="{{ url_for('admin_create_user') }}" class="btn-create">+ Create User</a>
+    </div>
+
+    <!-- Users Table -->
+    <div class="admin-table-card">
+        <div class="table-container">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>User</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>Predictions</th>
+                        <th>Joined</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if users %}
+                    {% for user in users %}
+                    <tr>
+                        <td>
+                            <div class="user-cell">
+                                <div class="user-avatar">{{ user.username[0].upper() }}</div>
+                                <div class="user-info">
+                                    <div class="user-name">{{ user.full_name or user.username }}</div>
+                                    <div class="user-username">@{{ user.username }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>{{ user.email }}</td>
+                        <td>
+                            <span class="role-badge role-{{ user.role }}">{{ user.role }}</span>
+                        </td>
+                        <td>
+                            <a href="{{ url_for('admin_user_detail', user_id=user.id) }}" class="link-primary">
+                                {{ user.predictions|length }} predictions
+                            </a>
+                        </td>
+                        <td>{{ user.created_at.strftime('%d %b %Y') if user.created_at else '-' }}</td>
+                        <td>
+                            <div class="action-buttons">
+                                <a href="{{ url_for('admin_user_detail', user_id=user.id) }}" 
+                                   class="btn-action btn-view" title="View Details">👁️</a>
+                                <a href="{{ url_for('admin_edit_user', user_id=user.id) }}" 
+                                   class="btn-action btn-edit" title="Edit User">✏️</a>
+                                {% if user.id != current_user.id %}
+                                <button onclick="toggleRole({{ user.id }}, '{{ user.role }}')" 
+                                        class="btn-action btn-toggle" title="Toggle Role">🔄</button>
+                                <button onclick="deleteUser({{ user.id }}, '{{ user.username }}')" 
+                                        class="btn-action btn-delete" title="Delete User">🗑️</button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="empty-state">No users found</td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if pagination.pages > 1 %}
+        <div class="pagination">
+            {% if pagination.has_prev %}
+            <a href="?page={{ pagination.prev_num }}{% if search %}&search={{ search }}{% endif %}{% if role_filter %}&role={{ role_filter }}{% endif %}" 
+               class="pagination-btn">← Previous</a>
+            {% endif %}
+            
+            <span class="pagination-info">
+                Page {{ pagination.page }} of {{ pagination.pages }}
+            </span>
+            
+            {% if pagination.has_next %}
+            <a href="?page={{ pagination.next_num }}{% if search %}&search={{ search }}{% endif %}{% if role_filter %}&role={{ role_filter }}{% endif %}" 
+               class="pagination-btn">Next →</a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleRole(userId, currentRole) {
+    if (!confirm(`Apakah Anda yakin ingin mengubah role user ini menjadi ${currentRole === 'admin' ? 'user' : 'admin'}?`)) {
+        return;
+    }
+    
+    fetch(`/admin/users/${userId}/toggle-role`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert('Error: ' + (data.error || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Terjadi kesalahan saat mengubah role');
+    });
+}
+
+function deleteUser(userId, username) {
+    if (!confirm(`Apakah Anda yakin ingin menghapus user "${username}"? Semua data user ini akan dihapus.`)) {
+        return;
+    }
+    
+    fetch(`/admin/users/${userId}/delete`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert('Error: ' + (data.error || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Terjadi kesalahan saat menghapus user');
+    });
+}
+</script>
+{% endblock %}
+

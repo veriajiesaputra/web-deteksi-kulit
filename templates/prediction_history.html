@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block title %}History Prediksi - Skinalyze{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <div class="page-header-icon">📊</div>
+        <h1>History Prediksi</h1>
+        <p>Semua prediksi yang pernah Anda lakukan</p>
+    </div>
+
+    <div class="history-container">
+        {% if predictions %}
+        <div class="history-grid">
+            {% for prediction in predictions %}
+            <div class="history-card">
+                <div class="history-card-image">
+                    {% if prediction.image_base64 %}
+                    <img src="data:image/jpeg;base64,{{ prediction.image_base64 }}" alt="Prediction">
+                    {% else %}
+                    <div class="history-image-placeholder">📷</div>
+                    {% endif %}
+                </div>
+                <div class="history-card-content">
+                    <div class="history-card-header">
+                        <h3>{{ prediction.predicted_class }}</h3>
+                        <button class="btn-icon-small" onclick="deleteHistory({{ prediction.id }})" title="Hapus">
+                            🗑️
+                        </button>
+                    </div>
+                    <div class="history-card-info">
+                        <div class="confidence-display">
+                            <span class="confidence-label">Tingkat Kepercayaan:</span>
+                            <span class="confidence-value-large">{{ "%.2f"|format(prediction.confidence * 100) }}%</span>
+                        </div>
+                        <div class="history-date-display">
+                            <span class="date-icon">📅</span>
+                            {{ prediction.created_at.strftime('%d %B %Y, %H:%M') if prediction.created_at else '-' }}
+                        </div>
+                    </div>
+                    {% if prediction.all_probabilities %}
+                    <div class="history-probabilities">
+                        <details>
+                            <summary>Lihat Probabilitas Lainnya</summary>
+                            <div class="probabilities-list">
+                                {% for class_name, prob in prediction.all_probabilities.items() %}
+                                <div class="probability-row {% if class_name == prediction.predicted_class %}predicted{% endif %}">
+                                    <span class="prob-class">{{ class_name }}</span>
+                                    <div class="prob-bar-container">
+                                        <div class="prob-bar" style="width: {{ prob * 100 }}%"></div>
+                                    </div>
+                                    <span class="prob-value">{{ "%.2f"|format(prob * 100) }}%</span>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </details>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Pagination -->
+        {% if pagination.pages > 1 %}
+        <div class="pagination">
+            {% if pagination.has_prev %}
+            <a href="{{ url_for('prediction_history', page=pagination.prev_num) }}" class="btn btn-outline">← Sebelumnya</a>
+            {% endif %}
+            
+            <span class="pagination-info">
+                Halaman {{ pagination.page }} dari {{ pagination.pages }}
+            </span>
+            
+            {% if pagination.has_next %}
+            <a href="{{ url_for('prediction_history', page=pagination.next_num) }}" class="btn btn-outline">Selanjutnya →</a>
+            {% endif %}
+        </div>
+        {% endif %}
+        {% else %}
+        <div class="history-empty">
+            <div class="empty-icon">📊</div>
+            <h3>Belum Ada History Prediksi</h3>
+            <p>Mulai prediksi sekarang untuk melihat history di sini!</p>
+            <a href="{{ url_for('predict_page') }}" class="btn btn-primary">Mulai Prediksi</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function deleteHistory(historyId) {
+    if (!confirm('Apakah Anda yakin ingin menghapus history ini?')) {
+        return;
+    }
+    
+    fetch(`/api/profile/history/${historyId}/delete`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Gagal menghapus history: ' + (data.error || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Terjadi kesalahan saat menghapus history');
+    });
+}
+</script>
+{% endblock %}
+

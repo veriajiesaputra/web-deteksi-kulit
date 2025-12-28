@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Profil - Skinalyze{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <div class="page-header-icon">✏️</div>
+        <h1>Edit Profil</h1>
+        <p>Perbarui informasi akun Anda</p>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="flash-messages">
+                {% for category, message in messages %}
+                    <div class="flash-message flash-{{ category }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <div class="profile-container">
+        <div class="profile-card">
+            <form method="POST" class="profile-form">
+                <h3 class="form-section-title">Informasi Umum</h3>
+                
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" value="{{ user.username }}" disabled>
+                    <small>Username tidak dapat diubah</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="full_name">Nama Lengkap</label>
+                    <input type="text" id="full_name" name="full_name" value="{{ user.full_name or '' }}">
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" value="{{ user.email }}" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="phone">No. Telepon</label>
+                    <input type="tel" id="phone" name="phone" value="{{ user.phone or '' }}">
+                </div>
+
+                <h3 class="form-section-title">Ubah Password</h3>
+                <p class="form-section-note">Kosongkan jika tidak ingin mengubah password</p>
+
+                <div class="form-group">
+                    <label for="current_password">Password Lama</label>
+                    <input type="password" id="current_password" name="current_password">
+                </div>
+
+                <div class="form-group">
+                    <label for="new_password">Password Baru</label>
+                    <input type="password" id="new_password" name="new_password" minlength="6">
+                    <small>Minimal 6 karakter</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="new_password_confirm">Konfirmasi Password Baru</label>
+                    <input type="password" id="new_password_confirm" name="new_password_confirm">
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Simpan Perubahan</button>
+                    <a href="{{ url_for('profile') }}" class="btn btn-secondary">Batal</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+

@@ -1,0 +1,45 @@
+# --- Python Standard ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# --- Virtual Environment ---
+# Folder environment python (wajib di-ignore agar upload cepat)
+venv/
+env/
+ENV/
+
+# --- Distribution / Packaging ---
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# --- Jupyter Notebook ---
+.ipynb_checkpoints/
+
+# --- IDE Settings (VS Code/PyCharm) ---
+.vscode/
+.idea/
+
+# --- Environment Variables & Secrets ---
+# File .env tidak boleh di-upload jika berisi password asli
+.env
+
+# --- Flask Specific ---
+instance/
+.webassets-cache
+
+# --- Project Specific ---
+# Folder tempat user meng-upload gambar saat prediksi (JANGAN di-upload)
+uploads/
+
+# --- Database ---
+# Jika menggunakan SQLite lokal (opsional)
+*.sqlite3
+*.db
+
+# --- Large Files ---
+# Jika model .h5 Anda lebih dari 100MB, uncomment baris di bawah ini:
+# *.h5

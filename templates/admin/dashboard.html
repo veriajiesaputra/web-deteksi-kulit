@@ -1,0 +1,235 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Dashboard - Admin Panel{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <!-- Stats Cards -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon stat-icon-primary">👥</div>
+            <div class="stat-content">
+                <div class="stat-label">Total Users</div>
+                <div class="stat-value">{{ total_users }}</div>
+                <div class="stat-change">
+                    <span class="change-positive">+{{ users_this_week }}</span>
+                    <span class="change-label">this week</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon stat-icon-success">🔍</div>
+            <div class="stat-content">
+                <div class="stat-label">Total Predictions</div>
+                <div class="stat-value">{{ total_predictions }}</div>
+                <div class="stat-change">
+                    <span class="change-positive">+{{ predictions_this_week }}</span>
+                    <span class="change-label">this week</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card stat-card-featured">
+            <div class="stat-icon stat-icon-featured">📊</div>
+            <div class="stat-content">
+                <div class="stat-label">Predictions Today</div>
+                <div class="stat-value">{{ predictions_today }}</div>
+                <div class="stat-percentage">
+                    <div class="percentage-circle">
+                        <span>{{ "%.0f"|format((predictions_today / total_predictions * 100) if total_predictions > 0 else 0) }}%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon stat-icon-info">👤</div>
+            <div class="stat-content">
+                <div class="stat-label">Regular Users</div>
+                <div class="stat-value">{{ total_regular_users }}</div>
+                <div class="stat-sublabel">{{ total_admins }} admins</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Grid -->
+    <div class="dashboard-grid">
+        <!-- Top Predictions with Chart -->
+        <div class="dashboard-card">
+            <div class="card-header">
+                <h3>Top Predicted Classes</h3>
+                <div class="chart-legend">
+                    <span class="legend-item">
+                        <span class="legend-color" style="background: linear-gradient(135deg, #6366f1, #8b5cf6);"></span>
+                        Total Predictions
+                    </span>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if top_predictions %}
+                <div class="chart-container">
+                    <canvas id="topPredictionsChart"></canvas>
+                </div>
+                <div class="top-predictions-stats">
+                    {% for class_name, count in top_predictions %}
+                    <div class="prediction-stat-item">
+                        <div class="stat-item-header">
+                            <span class="stat-class-name">{{ class_name }}</span>
+                            <span class="stat-class-count">{{ count }}</span>
+                        </div>
+                        <div class="stat-progress-bar">
+                            <div class="stat-progress-fill" 
+                                 style="width: {{ (count / top_predictions[0][1] * 100) if top_predictions else 0 }}%"></div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="empty-state">No predictions yet</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Recent Predictions -->
+        <div class="dashboard-card">
+            <div class="card-header">
+                <h3>Recent Predictions</h3>
+                <a href="{{ url_for('admin_predictions') }}" class="view-all-link">View All →</a>
+            </div>
+            <div class="card-body">
+                {% if recent_predictions %}
+                <div class="recent-predictions-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>User</th>
+                                <th>Prediction</th>
+                                <th>Confidence</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for pred in recent_predictions %}
+                            <tr>
+                                <td>
+                                    <div class="user-cell">
+                                        <div class="user-avatar-mini">{{ pred.user.username[0].upper() }}</div>
+                                        <span>{{ pred.user.username }}</span>
+                                    </div>
+                                </td>
+                                <td>{{ pred.predicted_class }}</td>
+                                <td>
+                                    <span class="confidence-badge">{{ "%.1f"|format(pred.confidence * 100) }}%</span>
+                                </td>
+                                <td>{{ pred.created_at.strftime('%d %b %Y, %H:%M') if pred.created_at else '-' }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="empty-state">No recent predictions</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Top Predictions Chart
+{% if top_predictions %}
+const topPredictionsData = {
+    labels: [{% for class_name, count in top_predictions %}'{{ class_name }}'{% if not loop.last %}, {% endif %}{% endfor %}],
+    datasets: [{
+        label: 'Number of Predictions',
+        data: [{% for class_name, count in top_predictions %}{{ count }}{% if not loop.last %}, {% endif %}{% endfor %}],
+        backgroundColor: [
+            'rgba(99, 102, 241, 0.8)',
+            'rgba(139, 92, 246, 0.8)',
+            'rgba(168, 85, 247, 0.8)',
+            'rgba(192, 132, 252, 0.8)',
+            'rgba(221, 214, 254, 0.8)'
+        ],
+        borderColor: [
+            'rgba(99, 102, 241, 1)',
+            'rgba(139, 92, 246, 1)',
+            'rgba(168, 85, 247, 1)',
+            'rgba(192, 132, 252, 1)',
+            'rgba(221, 214, 254, 1)'
+        ],
+        borderWidth: 2,
+        borderRadius: 8,
+        borderSkipped: false,
+    }]
+};
+
+const topPredictionsConfig = {
+    type: 'bar',
+    data: topPredictionsData,
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: false
+            },
+            tooltip: {
+                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                padding: 12,
+                titleFont: {
+                    size: 14,
+                    weight: 'bold'
+                },
+                bodyFont: {
+                    size: 13
+                },
+                callbacks: {
+                    label: function(context) {
+                        return context.parsed.y + ' predictions';
+                    }
+                }
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    stepSize: 1,
+                    font: {
+                        size: 11
+                    },
+                    color: '#64748b'
+                },
+                grid: {
+                    color: 'rgba(226, 232, 240, 0.5)'
+                }
+            },
+            x: {
+                ticks: {
+                    font: {
+                        size: 11
+                    },
+                    color: '#64748b',
+                    maxRotation: 45,
+                    minRotation: 45
+                },
+                grid: {
+                    display: false
+                }
+            }
+        }
+    }
+};
+
+const topPredictionsCtx = document.getElementById('topPredictionsChart');
+if (topPredictionsCtx) {
+    new Chart(topPredictionsCtx, topPredictionsConfig);
+}
+{% endif %}
+</script>
+{% endblock %}
+

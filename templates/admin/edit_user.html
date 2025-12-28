@@ -1,0 +1,95 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Edit User - Admin Panel{% endblock %}
+{% block page_title %}Edit User: {{ user.username }}{% endblock %}
+
+{% block content %}
+<div class="admin-page-container">
+    <div class="admin-form-card">
+        <div class="form-header">
+            <h2>Edit User</h2>
+            <a href="{{ url_for('admin_users') }}" class="btn-back">← Back to Users</a>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-messages">
+                    {% for category, message in messages %}
+                        <div class="flash-message flash-{{ category }}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <form method="POST" class="admin-form">
+            <div class="form-group">
+                <label for="username">Username *</label>
+                <input type="text" id="username" name="username" 
+                       value="{{ username or user.username }}" required 
+                       minlength="3" placeholder="Enter username">
+                <small>Minimum 3 characters</small>
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email *</label>
+                <input type="email" id="email" name="email" 
+                       value="{{ email or user.email }}" required 
+                       placeholder="Enter email address">
+            </div>
+
+            <div class="form-group">
+                <label for="full_name">Full Name</label>
+                <input type="text" id="full_name" name="full_name" 
+                       value="{{ full_name or user.full_name or '' }}" 
+                       placeholder="Enter full name (optional)">
+            </div>
+
+            <div class="form-group">
+                <label for="phone">Phone</label>
+                <input type="text" id="phone" name="phone" 
+                       value="{{ phone or user.phone or '' }}" 
+                       placeholder="Enter phone number (optional)">
+            </div>
+
+            <div class="form-group">
+                <label for="role">Role *</label>
+                <select id="role" name="role" required>
+                    <option value="user" {% if (role or user.role) == 'user' %}selected{% endif %}>User</option>
+                    <option value="admin" {% if (role or user.role) == 'admin' %}selected{% endif %}>Admin</option>
+                </select>
+                {% if user.id == current_user.id %}
+                <small class="warning-text">⚠️ Anda tidak dapat mengubah role sendiri</small>
+                {% endif %}
+            </div>
+
+            <div class="form-divider">
+                <span>Change Password (Optional)</span>
+            </div>
+
+            <div class="form-group">
+                <label for="password">New Password</label>
+                <input type="password" id="password" name="password" 
+                       minlength="6" 
+                       placeholder="Leave blank to keep current password">
+                <small>Minimum 6 characters. Leave blank if you don't want to change password.</small>
+            </div>
+
+            <div class="form-group">
+                <label for="password_confirm">Confirm New Password</label>
+                <input type="password" id="password_confirm" name="password_confirm" 
+                       minlength="6" 
+                       placeholder="Confirm new password">
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn-submit">Update User</button>
+                <a href="{{ url_for('admin_users') }}" class="btn-cancel">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+

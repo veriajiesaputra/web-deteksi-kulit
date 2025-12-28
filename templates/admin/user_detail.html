@@ -1,0 +1,143 @@
+{% extends "admin/base.html" %}
+
+{% block title %}{{ user.username }} - Admin Panel{% endblock %}
+{% block page_title %}User Details: {{ user.username }}{% endblock %}
+
+{% block content %}
+<div class="admin-page-container">
+    <!-- User Info Card -->
+    <div class="user-detail-card">
+        <div class="user-detail-header">
+            <div class="user-avatar-large">{{ user.username[0].upper() }}</div>
+            <div class="user-detail-info">
+                <h2>{{ user.full_name or user.username }}</h2>
+                <p class="user-detail-username">@{{ user.username }}</p>
+                <p class="user-detail-email">{{ user.email }}</p>
+            </div>
+            <div class="user-detail-stats">
+                <div class="detail-stat">
+                    <div class="detail-stat-value">{{ total_predictions }}</div>
+                    <div class="detail-stat-label">Total Predictions</div>
+                </div>
+                <div class="detail-stat">
+                    <div class="detail-stat-value">{{ predictions_this_week }}</div>
+                    <div class="detail-stat-label">This Week</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="user-detail-meta">
+            <div class="meta-item">
+                <span class="meta-label">Role:</span>
+                <span class="role-badge role-{{ user.role }}">{{ user.role }}</span>
+            </div>
+            <div class="meta-item">
+                <span class="meta-label">Phone:</span>
+                <span>{{ user.phone or '-' }}</span>
+            </div>
+            <div class="meta-item">
+                <span class="meta-label">Joined:</span>
+                <span>{{ user.created_at.strftime('%d %B %Y') if user.created_at else '-' }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Predictions History -->
+    <div class="admin-table-card">
+        <div class="card-header">
+            <h3>Prediction History</h3>
+        </div>
+        <div class="table-container">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>Image</th>
+                        <th>Prediction</th>
+                        <th>Confidence</th>
+                        <th>Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if predictions %}
+                    {% for pred in predictions %}
+                    <tr>
+                        <td>
+                            {% if pred.image_base64 %}
+                            <img src="data:image/jpeg;base64,{{ pred.image_base64 }}" 
+                                 alt="Prediction" class="prediction-thumb">
+                            {% else %}
+                            <div class="prediction-thumb-placeholder">📷</div>
+                            {% endif %}
+                        </td>
+                        <td>{{ pred.predicted_class }}</td>
+                        <td>
+                            <span class="confidence-badge">{{ "%.1f"|format(pred.confidence * 100) }}%</span>
+                        </td>
+                        <td>{{ pred.created_at.strftime('%d %b %Y, %H:%M') if pred.created_at else '-' }}</td>
+                        <td>
+                            <button onclick="deletePrediction({{ pred.id }})" 
+                                    class="btn-action btn-delete" title="Delete">🗑️</button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="empty-state">No predictions found</td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if pagination.pages > 1 %}
+        <div class="pagination">
+            {% if pagination.has_prev %}
+            <a href="?page={{ pagination.prev_num }}" class="pagination-btn">← Previous</a>
+            {% endif %}
+            
+            <span class="pagination-info">
+                Page {{ pagination.page }} of {{ pagination.pages }}
+            </span>
+            
+            {% if pagination.has_next %}
+            <a href="?page={{ pagination.next_num }}" class="pagination-btn">Next →</a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function deletePrediction(predictionId) {
+    if (!confirm('Apakah Anda yakin ingin menghapus prediksi ini?')) {
+        return;
+    }
+    
+    fetch(`/admin/predictions/${predictionId}/delete`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert('Error: ' + (data.error || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Terjadi kesalahan saat menghapus prediksi');
+    });
+}
+</script>
+{% endblock %}
+
+

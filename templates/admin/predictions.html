@@ -1,0 +1,143 @@
+{% extends "admin/base.html" %}
+
+{% block title %}All Predictions - Admin Panel{% endblock %}
+{% block page_title %}All Predictions{% endblock %}
+
+{% block content %}
+<div class="admin-page-container">
+    <!-- Search and Filters -->
+    <div class="page-toolbar">
+        <form method="GET" class="search-form">
+            <input type="text" name="search" placeholder="Search user, email, or prediction..." 
+                   value="{{ search }}" class="search-input">
+            <select name="class" class="filter-select">
+                <option value="">All Classes</option>
+                {% for class_name in all_classes %}
+                <option value="{{ class_name }}" {% if class_filter == class_name %}selected{% endif %}>
+                    {{ class_name }}
+                </option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="btn-search">🔍 Search</button>
+            <a href="{{ url_for('admin_predictions') }}" class="btn-reset">Reset</a>
+        </form>
+    </div>
+
+    <!-- Predictions Grouped by User -->
+    {% if users_predictions %}
+    {% for user, predictions in users_predictions.items() %}
+    <div class="user-predictions-card">
+        <div class="user-predictions-header">
+            <div class="user-cell">
+                <div class="user-avatar">{{ user.username[0].upper() }}</div>
+                <div class="user-info">
+                    <div class="user-name">{{ user.full_name or user.username }}</div>
+                    <div class="user-username">@{{ user.username }} • {{ user.email }}</div>
+                </div>
+            </div>
+            <div class="user-predictions-stats">
+                <span class="stat-badge">{{ predictions|length }} prediction{{ 's' if predictions|length != 1 else '' }}</span>
+                <a href="{{ url_for('admin_user_detail', user_id=user.id) }}" class="btn-view-user">View All →</a>
+            </div>
+        </div>
+        
+        <div class="predictions-table-wrapper">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>Image</th>
+                        <th>Prediction</th>
+                        <th>Confidence</th>
+                        <th>Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for pred in predictions %}
+                    <tr>
+                        <td>
+                            {% if pred.image_base64 %}
+                            <img src="data:image/jpeg;base64,{{ pred.image_base64 }}" 
+                                 alt="Prediction" class="prediction-thumb">
+                            {% else %}
+                            <div class="prediction-thumb-placeholder">📷</div>
+                            {% endif %}
+                        </td>
+                        <td>{{ pred.predicted_class }}</td>
+                        <td>
+                            <span class="confidence-badge">{{ "%.1f"|format(pred.confidence * 100) }}%</span>
+                        </td>
+                        <td>{{ pred.created_at.strftime('%d %b %Y, %H:%M') if pred.created_at else '-' }}</td>
+                        <td>
+                            <div class="action-buttons">
+                                <a href="{{ url_for('admin_user_detail', user_id=user.id) }}" 
+                                   class="btn-action btn-view" title="View User">👁️</a>
+                                <button onclick="deletePrediction({{ pred.id }})" 
+                                        class="btn-action btn-delete" title="Delete">🗑️</button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <div class="admin-table-card">
+        <div class="empty-state">
+            <p>No predictions found</p>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Pagination -->
+    {% if pagination.pages > 1 %}
+    <div class="pagination">
+        {% if pagination.has_prev %}
+        <a href="?page={{ pagination.prev_num }}{% if search %}&search={{ search }}{% endif %}{% if class_filter %}&class={{ class_filter }}{% endif %}" 
+           class="pagination-btn">← Previous</a>
+        {% endif %}
+        
+        <span class="pagination-info">
+            Page {{ pagination.page }} of {{ pagination.pages }}
+        </span>
+        
+        {% if pagination.has_next %}
+        <a href="?page={{ pagination.next_num }}{% if search %}&search={{ search }}{% endif %}{% if class_filter %}&class={{ class_filter }}{% endif %}" 
+           class="pagination-btn">Next →</a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function deletePrediction(predictionId) {
+    if (!confirm('Apakah Anda yakin ingin menghapus prediksi ini?')) {
+        return;
+    }
+    
+    fetch(`/admin/predictions/${predictionId}/delete`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert('Error: ' + (data.error || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Terjadi kesalahan saat menghapus prediksi');
+    });
+}
+</script>
+{% endblock %}

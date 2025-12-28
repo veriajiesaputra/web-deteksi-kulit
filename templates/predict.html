@@ -1,0 +1,662 @@
+{% extends "base.html" %}
+
+{% block title %}Prediksi - Skinalyze{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <div class="page-header-icon">🤖</div>
+        <h1>Prediksi Penyakit Kulit dengan AI</h1>
+        <p>Unggah gambar atau gunakan kamera untuk mendeteksi penyakit kulit secara cepat dan akurat</p>
+    </div>
+
+    <div class="predict-container">
+        <!-- Mode Selection Tabs -->
+        <div class="mode-selector">
+            <button class="mode-tab active" id="uploadTab" onclick="switchMode('upload')">
+                <span class="mode-icon">📤</span>
+                <span class="mode-text">Upload Gambar</span>
+            </button>
+            <button class="mode-tab" id="cameraTab" onclick="switchMode('camera')">
+                <span class="mode-icon">📷</span>
+                <span class="mode-text">Kamera Real-time</span>
+            </button>
+        </div>
+
+        <!-- Upload Section -->
+        <div class="upload-section" id="uploadSection">
+            <h2 class="section-title">📤 Upload Gambar</h2>
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-content">
+                    <div class="upload-icon-wrapper">
+                        <div class="upload-icon">📁</div>
+                        <div class="upload-icon-glow"></div>
+                    </div>
+                    <p class="upload-text">Drag & drop gambar di sini</p>
+                    <p class="upload-subtext">atau klik untuk memilih file</p>
+                    <p class="upload-info">Format: JPG, JPEG, PNG (Max: 16MB)</p>
+                    <input type="file" id="fileInput" accept="image/jpeg,image/png,image/jpg" hidden>
+                    <button class="btn btn-primary btn-upload" onclick="document.getElementById('fileInput').click()">
+                        <span>📤</span> Pilih File
+                    </button>
+                </div>
+            </div>
+            <div id="imagePreview" class="image-preview"></div>
+        </div>
+
+        <!-- Camera Section -->
+        <div class="camera-section" id="cameraSection" style="display: none;">
+            <h2 class="section-title">📷 Kamera Real-time</h2>
+            <div class="camera-container">
+                <video id="videoElement" autoplay playsinline style="display: none;"></video>
+                <canvas id="canvasElement" style="display: none;"></canvas>
+                <div class="camera-placeholder" id="cameraPlaceholder">
+                    <div class="camera-icon-large">📷</div>
+                    <p>Kamera belum diaktifkan</p>
+                    <p class="camera-subtext">Klik "Mulai Kamera" untuk memulai</p>
+                </div>
+                <div class="camera-overlay" id="cameraOverlay" style="display: none;">
+                    <div class="camera-frame"></div>
+                </div>
+            </div>
+            <div class="camera-controls">
+                <button class="btn btn-primary" id="startCameraBtn">Mulai Kamera</button>
+                <button class="btn btn-secondary" id="stopCameraBtn" style="display: none;">Stop Kamera</button>
+                <button class="btn btn-primary" id="captureBtn" style="display: none;">Ambil Foto & Prediksi</button>
+                <button class="btn btn-outline" id="autoPredictBtn" style="display: none;">
+                    <span id="autoPredictText">Aktifkan Prediksi Otomatis</span>
+                </button>
+            </div>
+            <div id="cameraStatus" class="camera-status"></div>
+        </div>
+
+        <!-- Result Section -->
+        <div id="resultSection" class="result-section" style="display: none;">
+            <h2 class="section-title">🎯 Hasil Prediksi</h2>
+            <div class="result-top-container">
+                <div class="result-image-container">
+                    <img id="resultImage" src="" alt="Uploaded image" class="result-image">
+                </div>
+                <div class="result-info">
+                    <div class="prediction-card">
+                        <div class="prediction-badge">🎯</div>
+                        <div class="prediction-label">Kelas Prediksi</div>
+                        <div class="prediction-value" id="predictedClass">-</div>
+                        <div class="prediction-confidence">
+                            <span class="confidence-label">Tingkat Kepercayaan</span>
+                            <span class="confidence-value" id="confidence">-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="probabilities-card">
+                <h3>Probabilitas (≥10%)</h3>
+                <div id="probabilitiesList" class="probabilities-list"></div>
+            </div>
+
+            <!-- Article Section - Muncul setelah hasil prediksi -->
+            <div class="article-section" id="articleSection" style="display: none;">
+                <h3 class="section-title">📚 Artikel Lengkap: <span id="articleTitleDisease">-</span></h3>
+                <div class="disease-info-container" id="articleInfoContainer" style="display: none;">
+                    <div class="disease-header">
+                        <h4 id="articleDiseaseName" class="disease-name">-</h4>
+                    </div>
+
+                    <!-- Explanation -->
+                    <div class="disease-section">
+                        <h4 class="disease-section-title">📋 Penjelasan</h4>
+                        <p id="articleExplanation" class="disease-text">-</p>
+                    </div>
+
+                    <!-- Treatment -->
+                    <div class="disease-section">
+                        <h4 class="disease-section-title">💊 Pengobatan & Perawatan</h4>
+                        <ul id="articleTreatment" class="disease-treatment-list">
+                            <!-- Will be populated by JavaScript -->
+                        </ul>
+                    </div>
+
+                    <!-- Sample Images -->
+                    <div class="disease-section">
+                        <h4 class="disease-section-title">🖼️ Contoh Gambar dari Dataset</h4>
+                        <div id="articleImages" class="disease-images-grid">
+                            <!-- Will be populated by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Loading indicator -->
+                <div class="disease-loading" id="articleLoading" style="display: none;">
+                    <div class="spinner-small"></div>
+                    <p>Memuat artikel...</p>
+                </div>
+            </div>
+
+            <div class="result-actions">
+                <button class="btn btn-secondary" onclick="resetPrediction()">Unggah Gambar Baru</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading -->
+    <div class="loading-overlay" id="loadingOverlay" style="display: none;">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <p>Memproses gambar...</p>
+            <p class="loading-subtext">Mohon tunggu sebentar</p>
+        </div>
+    </div>
+
+    <!-- Error -->
+    <div class="error-message" id="errorMessage" style="display: none;"></div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+    const uploadArea = document.getElementById('uploadArea');
+    const fileInput = document.getElementById('fileInput');
+    const imagePreview = document.getElementById('imagePreview');
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    const errorMessage = document.getElementById('errorMessage');
+    const resultSection = document.getElementById('resultSection');
+
+    // Drag and drop handlers
+    uploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadArea.classList.add('drag-over');
+    });
+
+    uploadArea.addEventListener('dragleave', () => {
+        uploadArea.classList.remove('drag-over');
+    });
+
+    uploadArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadArea.classList.remove('drag-over');
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            handleFile(files[0]);
+        }
+    });
+
+    // File input change
+    fileInput.addEventListener('change', (e) => {
+        if (e.target.files.length > 0) {
+            handleFile(e.target.files[0]);
+        }
+    });
+
+    // Click to upload
+    uploadArea.addEventListener('click', () => {
+        fileInput.click();
+    });
+
+    function handleFile(file) {
+        // Validate file type
+        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+        if (!allowedTypes.includes(file.type)) {
+            showError('Format file tidak didukung. Silakan upload JPG, JPEG, atau PNG.');
+            return;
+        }
+
+        // Validate file size (16MB)
+        if (file.size > 16 * 1024 * 1024) {
+            showError('Ukuran file terlalu besar. Maksimal 16MB.');
+            return;
+        }
+
+        // Show preview
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            imagePreview.innerHTML = `
+                <img src="${e.target.result}" alt="Preview" class="preview-image">
+                <button class="btn btn-primary" onclick="uploadAndPredict()">Prediksi Sekarang</button>
+            `;
+            window.selectedFile = file;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    window.uploadAndPredict = function() {
+        if (!window.selectedFile) return;
+
+        const formData = new FormData();
+        formData.append('file', window.selectedFile);
+
+        // Show loading
+        loadingOverlay.style.display = 'flex';
+        errorMessage.style.display = 'none';
+        resultSection.style.display = 'none';
+
+        fetch('/api/predict', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            loadingOverlay.style.display = 'none';
+            
+            if (data.error) {
+                showError(data.error);
+                return;
+            }
+
+            // Show results
+            displayResults(data);
+        })
+        .catch(error => {
+            loadingOverlay.style.display = 'none';
+            showError('Terjadi kesalahan: ' + error.message);
+        });
+    };
+
+    function displayResults(data) {
+        // Set image preview
+        document.getElementById('resultImage').src = data.image_preview;
+        
+        // Set prediction
+        document.getElementById('predictedClass').textContent = data.predicted_class;
+        document.getElementById('confidence').textContent = (data.confidence * 100).toFixed(2) + '%';
+        
+        // Filter dan tampilkan probabilitas yang >= 10%
+        const probabilitiesList = document.getElementById('probabilitiesList');
+        probabilitiesList.innerHTML = '';
+        
+        // Convert to array, filter >= 10%, dan sort dari tertinggi
+        const filteredProbabilities = Object.entries(data.all_probabilities)
+            .map(([className, prob]) => ({
+                className,
+                prob,
+                probPercent: prob * 100
+            }))
+            .filter(item => item.probPercent >= 10) // Hanya yang >= 10%
+            .sort((a, b) => b.probPercent - a.probPercent); // Sort dari tertinggi
+        
+        if (filteredProbabilities.length === 0) {
+            // Jika tidak ada yang >= 10%, tampilkan hanya yang tertinggi
+            const topPrediction = Object.entries(data.all_probabilities)
+                .map(([className, prob]) => ({
+                    className,
+                    prob,
+                    probPercent: prob * 100
+                }))
+                .sort((a, b) => b.probPercent - a.probPercent)[0];
+            
+            filteredProbabilities.push(topPrediction);
+        }
+        
+        // Tampilkan probabilitas yang sudah difilter
+        filteredProbabilities.forEach(({ className, probPercent }) => {
+            const isPredicted = className === data.predicted_class;
+            
+            const item = document.createElement('div');
+            item.className = `probability-item ${isPredicted ? 'predicted' : ''}`;
+            item.innerHTML = `
+                <div class="probability-name">${isPredicted ? '👉 ' : ''}${className}</div>
+                <div class="probability-bar-container">
+                    <div class="probability-bar" style="width: ${probPercent}%"></div>
+                </div>
+                <div class="probability-value">${probPercent.toFixed(2)}%</div>
+            `;
+            probabilitiesList.appendChild(item);
+        });
+        
+        // Show result section
+        resultSection.style.display = 'block';
+        resultSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+        // Load article information for the predicted disease
+        loadArticleInfo(data.predicted_class);
+    }
+
+    async function loadArticleInfo(diseaseName) {
+        const articleSection = document.getElementById('articleSection');
+        const loadingDiv = document.getElementById('articleLoading');
+        const infoContainer = document.getElementById('articleInfoContainer');
+        
+        if (!articleSection || !loadingDiv || !infoContainer) {
+            console.error('Article section elements not found');
+            return;
+        }
+        
+        // Show article section and loading
+        articleSection.style.display = 'block';
+        loadingDiv.style.display = 'block';
+        infoContainer.style.display = 'none';
+        
+        console.log('Loading article for disease:', diseaseName);
+        
+        try {
+            // Load disease info and images in parallel
+            const [infoResponse, imagesResponse] = await Promise.all([
+                fetch(`/api/disease/${encodeURIComponent(diseaseName)}`),
+                fetch(`/api/disease/${encodeURIComponent(diseaseName)}/images`)
+            ]);
+            
+            console.log('API responses:', {
+                info: infoResponse.status,
+                images: imagesResponse.status
+            });
+            
+            if (!infoResponse.ok) {
+                const errorData = await infoResponse.json().catch(() => ({}));
+                console.error('Info response error:', errorData);
+                throw new Error(errorData.error || 'Gagal memuat informasi penyakit');
+            }
+            
+            if (!imagesResponse.ok) {
+                console.warn('Images response error:', imagesResponse.status);
+            }
+            
+            const infoData = await infoResponse.json();
+            
+            // Try to load images, but don't fail if it doesn't work
+            let imagesData = { images: [] };
+            try {
+                if (imagesResponse.ok) {
+                    imagesData = await imagesResponse.json();
+                }
+            } catch (e) {
+                console.warn('Error loading images:', e);
+            }
+            
+            // Display disease info
+            document.getElementById('articleDiseaseName').textContent = infoData.display_name || diseaseName;
+            document.getElementById('articleTitleDisease').textContent = infoData.display_name || diseaseName;
+            document.getElementById('articleExplanation').textContent = infoData.explanation || 'Penjelasan tidak tersedia.';
+            
+            // Display treatment
+            const treatmentList = document.getElementById('articleTreatment');
+            treatmentList.innerHTML = '';
+            if (infoData.treatment && infoData.treatment.length > 0) {
+                infoData.treatment.forEach(treatment => {
+                    const li = document.createElement('li');
+                    li.textContent = treatment;
+                    treatmentList.appendChild(li);
+                });
+            } else {
+                const li = document.createElement('li');
+                li.textContent = 'Konsultasikan dengan dokter untuk penanganan yang tepat.';
+                treatmentList.appendChild(li);
+            }
+            
+            // Display images
+            const imagesGrid = document.getElementById('articleImages');
+            imagesGrid.innerHTML = '';
+            if (imagesData.images && imagesData.images.length > 0) {
+                imagesData.images.forEach(imageUrl => {
+                    const div = document.createElement('div');
+                    div.className = 'disease-image-item';
+                    
+                    const img = document.createElement('img');
+                    img.src = imageUrl;
+                    img.alt = infoData.display_name || diseaseName;
+                    img.loading = 'lazy';
+                    img.style.width = '100%';
+                    img.style.height = '100%';
+                    img.style.objectFit = 'cover';
+                    img.onerror = function() {
+                        console.error('Error loading image:', imageUrl);
+                        this.parentElement.style.display = 'none';
+                    };
+                    
+                    div.appendChild(img);
+                    imagesGrid.appendChild(div);
+                });
+            } else {
+                const p = document.createElement('p');
+                p.textContent = 'Tidak ada gambar tersedia untuk penyakit ini.';
+                p.style.color = 'var(--text-secondary)';
+                p.style.padding = '2rem';
+                p.style.textAlign = 'center';
+                imagesGrid.appendChild(p);
+            }
+            
+            // Hide loading and show info
+            loadingDiv.style.display = 'none';
+            infoContainer.style.display = 'block';
+            
+            console.log('Article loaded successfully');
+            
+        } catch (error) {
+            console.error('Error loading article info:', error);
+            loadingDiv.style.display = 'none';
+            // Show error message in container
+            infoContainer.innerHTML = `<p style="text-align: center; color: var(--text-secondary); padding: 2rem;">Gagal memuat artikel untuk "${diseaseName}". Silakan coba lagi atau hubungi administrator.</p>`;
+            infoContainer.style.display = 'block';
+        }
+    }
+
+    function showError(message) {
+        errorMessage.textContent = message;
+        errorMessage.style.display = 'block';
+        setTimeout(() => {
+            errorMessage.style.display = 'none';
+        }, 5000);
+    }
+
+    window.resetPrediction = function() {
+        window.selectedFile = null;
+        fileInput.value = '';
+        imagePreview.innerHTML = '';
+        resultSection.style.display = 'none';
+        errorMessage.style.display = 'none';
+        
+        // Hide article section
+        const articleSection = document.getElementById('articleSection');
+        if (articleSection) {
+            articleSection.style.display = 'none';
+        }
+        
+        // Stop camera if active
+        if (stream) {
+            stopCamera();
+        }
+    };
+
+    // ============================================
+    // Mode Selection (Upload vs Camera)
+    // ============================================
+    window.switchMode = function(mode) {
+        const uploadTab = document.getElementById('uploadTab');
+        const cameraTab = document.getElementById('cameraTab');
+        const uploadSection = document.getElementById('uploadSection');
+        const cameraSection = document.getElementById('cameraSection');
+        
+        if (mode === 'upload') {
+            // Switch to upload mode
+            uploadTab.classList.add('active');
+            cameraTab.classList.remove('active');
+            uploadSection.style.display = 'block';
+            cameraSection.style.display = 'none';
+            
+            // Stop camera if active
+            if (stream) {
+                stopCamera();
+            }
+            
+            // Hide result section when switching
+            resultSection.style.display = 'none';
+        } else if (mode === 'camera') {
+            // Switch to camera mode
+            cameraTab.classList.add('active');
+            uploadTab.classList.remove('active');
+            cameraSection.style.display = 'block';
+            uploadSection.style.display = 'none';
+            
+            // Clear upload preview
+            imagePreview.innerHTML = '';
+            window.selectedFile = null;
+            fileInput.value = '';
+            
+            // Hide result section when switching
+            resultSection.style.display = 'none';
+        }
+    };
+
+    // ============================================
+    // Camera Real-time Features
+    // ============================================
+    const videoElement = document.getElementById('videoElement');
+    const canvasElement = document.getElementById('canvasElement');
+    const startCameraBtn = document.getElementById('startCameraBtn');
+    const stopCameraBtn = document.getElementById('stopCameraBtn');
+    const captureBtn = document.getElementById('captureBtn');
+    const autoPredictBtn = document.getElementById('autoPredictBtn');
+    const cameraPlaceholder = document.getElementById('cameraPlaceholder');
+    const cameraOverlay = document.getElementById('cameraOverlay');
+    const cameraStatus = document.getElementById('cameraStatus');
+    
+    let stream = null;
+    let autoPredictInterval = null;
+    let isAutoPredictActive = false;
+
+    // Start camera
+    startCameraBtn.addEventListener('click', async function() {
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({ 
+                video: { 
+                    facingMode: 'environment', // Use back camera if available
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 }
+                } 
+            });
+            
+            videoElement.srcObject = stream;
+            videoElement.style.display = 'block';
+            cameraPlaceholder.style.display = 'none';
+            cameraOverlay.style.display = 'block';
+            
+            startCameraBtn.style.display = 'none';
+            stopCameraBtn.style.display = 'inline-block';
+            captureBtn.style.display = 'inline-block';
+            autoPredictBtn.style.display = 'inline-block';
+            
+            cameraStatus.textContent = '✅ Kamera aktif';
+            cameraStatus.className = 'camera-status success';
+        } catch (error) {
+            console.error('Error accessing camera:', error);
+            cameraStatus.textContent = '❌ Gagal mengakses kamera. Pastikan izin kamera sudah diberikan.';
+            cameraStatus.className = 'camera-status error';
+            showError('Tidak dapat mengakses kamera. Pastikan browser mendukung dan izin sudah diberikan.');
+        }
+    });
+
+    // Stop camera
+    stopCameraBtn.addEventListener('click', function() {
+        stopCamera();
+    });
+
+    function stopCamera() {
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+            stream = null;
+        }
+        
+        videoElement.srcObject = null;
+        videoElement.style.display = 'none';
+        cameraPlaceholder.style.display = 'block';
+        cameraOverlay.style.display = 'none';
+        
+        startCameraBtn.style.display = 'inline-block';
+        stopCameraBtn.style.display = 'none';
+        captureBtn.style.display = 'none';
+        autoPredictBtn.style.display = 'none';
+        
+        // Stop auto predict
+        if (autoPredictInterval) {
+            clearInterval(autoPredictInterval);
+            autoPredictInterval = null;
+            isAutoPredictActive = false;
+            autoPredictBtn.querySelector('span').textContent = 'Aktifkan Prediksi Otomatis';
+        }
+        
+        cameraStatus.textContent = '';
+        cameraStatus.className = 'camera-status';
+    }
+
+    // Capture photo manually
+    captureBtn.addEventListener('click', function() {
+        captureAndPredict();
+    });
+
+    function captureAndPredict() {
+        if (!stream) return;
+        
+        const canvas = canvasElement;
+        const video = videoElement;
+        
+        // Check if video is ready
+        if (video.readyState !== video.HAVE_ENOUGH_DATA) {
+            cameraStatus.textContent = '⏳ Menunggu video siap...';
+            return;
+        }
+        
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0);
+        
+        // Convert canvas to blob
+        canvas.toBlob(function(blob) {
+            if (!blob) {
+                showError('Gagal mengambil foto dari kamera');
+                return;
+            }
+            
+            const file = new File([blob], 'camera-capture.jpg', { type: 'image/jpeg' });
+            window.fromCamera = true;
+            window.selectedFile = file;
+            
+            // Directly predict without showing preview
+            uploadAndPredict();
+        }, 'image/jpeg', 0.95);
+    }
+
+    // Auto predict toggle
+    autoPredictBtn.addEventListener('click', function() {
+        if (!isAutoPredictActive) {
+            // Start auto predict
+            isAutoPredictActive = true;
+            autoPredictBtn.querySelector('span').textContent = 'Nonaktifkan Prediksi Otomatis';
+            autoPredictBtn.classList.add('active');
+            
+            cameraStatus.textContent = '🔄 Prediksi otomatis aktif (setiap 3 detik)';
+            cameraStatus.className = 'camera-status info';
+            
+            // Auto predict every 3 seconds
+            autoPredictInterval = setInterval(() => {
+                if (stream && videoElement.readyState === videoElement.HAVE_ENOUGH_DATA) {
+                    captureAndPredict();
+                }
+            }, 3000);
+            
+            // First prediction immediately
+            setTimeout(() => {
+                if (stream) captureAndPredict();
+            }, 500);
+        } else {
+            // Stop auto predict
+            isAutoPredictActive = false;
+            autoPredictBtn.querySelector('span').textContent = 'Aktifkan Prediksi Otomatis';
+            autoPredictBtn.classList.remove('active');
+            
+            if (autoPredictInterval) {
+                clearInterval(autoPredictInterval);
+                autoPredictInterval = null;
+            }
+            
+            cameraStatus.textContent = '✅ Kamera aktif';
+            cameraStatus.className = 'camera-status success';
+        }
+    });
+
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', function() {
+        stopCamera();
+    });
+    });
+</script>
+{% endblock %}
