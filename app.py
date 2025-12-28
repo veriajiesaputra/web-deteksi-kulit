@@ -1196,6 +1196,19 @@ def admin_delete_prediction(prediction_id):
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
     
+@app.route('/make_me_admin/<username>')
+def make_me_admin(username):
+    # Cari user berdasarkan username
+    user = User.query.filter_by(username=username).first()
+    
+    if user:
+        # Ubah role jadi admin
+        user.role = 'admin'
+        db.session.commit()
+        return f"Sukses! User '{username}' sekarang adalah ADMIN. Silakan logout dan login lagi."
+    else:
+        return f"User '{username}' tidak ditemukan. Daftar dulu!"    
+    
 with app.app_context():
     try:
         db.create_all()
