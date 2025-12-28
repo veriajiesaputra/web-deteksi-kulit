@@ -1193,7 +1193,13 @@ def admin_delete_prediction(prediction_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
-
+    
+with app.app_context():
+    try:
+        db.create_all()
+        print("✅ Database & Tabel berhasil dibuat!")
+    except Exception as e:
+        print(f"⚠️ Gagal membuat database: {e}")
 
 if __name__ == '__main__':
     # Create database tables
